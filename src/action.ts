@@ -410,7 +410,9 @@ export class Action implements IAction {
 				path: parts[4],
 				ref: parts[5],
 			}
-		} else throw new Error(`Unknown Execution Engine: ${using}`)
+		} else {
+			throw new Error(`Unknown Execution Engine: ${using}`)
+		}
 	}
 
 	isDocker = (): boolean => this.runs.using === Using.Docker
@@ -435,8 +437,22 @@ export class Action implements IAction {
 	dockerImage = async (): Promise<string> => {
 		const url = this.url as DockerURL
 		const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
-		return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
+		return r.then(r => formatDockerImagePath(r!, url))
 	}
+}
+
+function formatDockerImagePath(registry: string, url: DockerURL): string {
+	let dockerImagePath: string = url.image!
+
+	if (registry) {
+		dockerImagePath = `${registry}/${dockerImagePath}`
+	}
+
+	if (url.tag) {
+		dockerImagePath += `:${url.tag}`
+	}
+
+	return dockerImagePath
 }
 
 export class Target {
@@ -451,7 +467,7 @@ export class Target {
 	dockerImage = async (): Promise<string> => {
 		const url = this.url as DockerURL
 		const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
-		return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
+		return r.then(r => formatDockerImagePath(r!, url))
 	}
 }
 
