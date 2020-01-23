@@ -1,7 +1,7 @@
 import { readFile as readFileCallback } from 'fs'
 import { promisify } from 'util'
 import { join, resolve } from 'path'
-import { getInput, getState, saveState, setSecret } from '@actions/core'
+import { getInput, getState, saveState, setSecret, group, setFailed } from '@actions/core'
 import { exec } from '@actions/exec'
 import { rmRF } from '@actions/io'
 import { target, ContainerRuns, NodeRuns, NodeURL } from './action'
@@ -20,25 +20,30 @@ if (!isPost) {
     return token().then(GITHUB_TOKEN => {
       const repo = `https://${GITHUB_TOKEN}@github.com/${(target.url as NodeURL).action}.git`
 
-      return clone(repo).then(dir => {
-        const readFile = promisify(readFileCallback)
+      return group('Cloning Target Action', () => clone(repo))
+        .then(dir => {
+          const readFile = promisify(readFileCallback)
 
-        return readFile(join(dir, 'action.yml'))
-          .then(text => parse(text.toString()))
-          .then(action => {
-            if (action.isNode()) {
-              return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
-                cwd: dir,
-                env: action.env(),
-              })
-            }
+          return readFile(join(dir, 'action.yml'))
+            .then(text => parse(text.toString()))
+            .then(action => {
+              if (action.isNode()) {
+                return group('Running Node Action', () => {
+                  return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
+                    cwd: dir,
+                    env: action.env(),
+                  })
+                })
+              }
 
-            // Container Action
-            return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
-          })
-          .finally(() => rmRF(dir))
-      })
+              // Container Action
+              return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
+            })
+            .finally(() => rmRF(dir))
+        })
     })
+  }).catch(err => {
+    setFailed(`Action Failed: ${err.message}`)
   })
 
   saveState('isPost', 'true')
@@ -51,13 +56,15 @@ function runDocker(image: string, runs?: ContainerRuns) {
   if (runs && runs.env) Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
   args.push(image)
 
-  if (/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/.exec(image) !== null) {
-    return login()
-      .then(_ => exec('docker', args))
-      .finally(logout)
-  }
+  return group('Running Docker Action', () => {
+    if (/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/.exec(image) !== null) {
+      return login()
+        .then(_ => exec('docker', args))
+        .finally(logout)
+    }
 
-  return exec('docker', args)
+    return exec('docker', args)
+  })
 }
 
 function hideSecret(secret: string): string {

@@ -1,5 +1,5 @@
 import { ECR } from 'aws-sdk'
-import { debug } from '@actions/core'
+import { info, debug } from '@actions/core'
 import { exec } from '@actions/exec'
 import { accountID, region } from './aws'
 
@@ -32,6 +32,7 @@ export function login() {
     let stdout: Array<Buffer> = []
     let stderr: Array<Buffer> = []
 
+    info('Logging into AWS ECR')
     return exec('docker', ['login', '-u', username, '-p', password, authData.proxyEndpoint!], {
       silent: true,
       listeners: {
@@ -46,13 +47,27 @@ export function login() {
 }
 
 export function registry(): Promise<string> {
-  return Promise.all([
-    accountID(), region(),
-  ]).then(([accountID, region]) => {
-    return `${accountID}.dkr.ecr.${region}.amazonaws.com`
-  })
+  return Promise.all([accountID(), region()])
+    .then(([accountID, region]) => {
+      return `${accountID}.dkr.ecr.${region}.amazonaws.com`
+    })
 }
 
 export function logout(): Promise<number> {
-  return registry().then(registry => exec('docker', ['logout', registry]))
+  return registry().then(registry => {
+    let stdout: Array<Buffer> = []
+    let stderr: Array<Buffer> = []
+
+    info('Logging out of ECR')
+    return exec('docker', ['logout', registry], {
+      silent: true,
+      listeners: {
+        stdout: (data: Buffer) => stdout.push(data),
+        stderr: (data: Buffer) => stderr.push(data),
+      },
+    }).catch(err => {
+      debug(stdout.join(''))
+      throw new Error(`Failed to login to docker: ${stderr.join('')}. ${err.message}`)
+    })
+  })
 }

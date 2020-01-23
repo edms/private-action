@@ -1,5 +1,5 @@
-import { getInput } from '@actions/core'
-import { registry } from './ecr'
+import { getInput, info } from '@actions/core'
+import { registry as ecrRegistry } from './ecr'
 
 /*
   Formats:
@@ -424,9 +424,10 @@ export class Action implements IAction {
   }
 
   dockerImage = (): Promise<string> => {
+    if ((this.url as NodeURL).action !== 'undefined') throw new Error('Unable to retrieve a docker image from a Node Action')
+
     const url = this.url as DockerURL
-    const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
-    return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
+    return registry(url).then(registry => `${registry}${url.image}${url.tag ? ':' + url.tag : ''}`)
   }
 }
 
@@ -440,22 +441,34 @@ export class Target {
   }
 
   dockerImage = (): Promise<string> => {
+    if ((this.url as NodeURL).action !== 'undefined') throw new Error('Unable to retrieve a docker image from a Node Action')
+
     const url = this.url as DockerURL
-    const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
-    return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
+    return registry(url).then(registry => `${registry}${url.image}${url.tag ? ':' + url.tag : ''}`)
   }
+}
+
+function registry(url: DockerURL): Promise<string> {
+  if (url.registry === 'ECR') {
+    return ecrRegistry().then(registry => {
+      info(`ECR registry detected, replacing with: ${registry}`)
+      return registry + '/'
+    })
+  }
+
+  if (url.registry && url.registry.length) return Promise.resolve(url.registry + '/')
+
+  return Promise.resolve('')
 }
 
 export function target(): Promise<Target> {
   const action = getInput('target-action', { required: true })
 
-  if (action.startsWith('.')) return Promise.reject(new Error('Does not support local prefixed actions'))
+  if (action.startsWith('.')) throw new Error('Does not support local prefixed actions')
 
   if (action.startsWith('docker://')) {
     const parts = dockerURL.exec(action)!
-    if (parts.length !== 4) {
-      throw new Error('Action must be in the following format: [{registry}/]{image}[:{tag}]')
-    }
+    if (parts.length !== 4) throw new Error('Action must be in the following format: [{registry}/]{image}[:{tag}]')
 
     return Promise.resolve(new Target({
       registry: parts[1],
@@ -465,7 +478,7 @@ export function target(): Promise<Target> {
   }
 
   const parts = actionURL.exec(action)!
-  if (parts.length !== 6) return Promise.reject(new Error('Action must be in the following format: {owner}/{repo}[/{path}][@{ref}]'))
+  if (parts.length !== 6) throw new Error('Action must be in the following format: {owner}/{repo}[/{path}][@{ref}]')
 
   return Promise.resolve(new Target({
     action: parts[1],
