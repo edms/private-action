@@ -1,5 +1,4 @@
-import { readFile as readFileCallback } from 'fs'
-import { promisify } from 'util'
+import fs from 'fs'
 import { join, resolve } from 'path'
 import { getInput, getState, saveState, setSecret } from '@actions/core'
 import { exec } from '@actions/exec'
@@ -10,54 +9,60 @@ import { clone } from './git'
 import { getParameter } from './ssm'
 import { parse } from './yaml'
 
+const ecrDockerUrl = new RegExp(/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/)
 const isPost = getState('isPost') === 'true'
 
 if (!isPost) {
 	target().then(async target => {
 		// Run Container Directly
-		if (!target.clone) return target.dockerImage().then(runDocker)
+		if (!target.clone) {
+			return target.dockerImage().then(runDocker)
+		}
 
-		return token().then(async GITHUB_TOKEN => {
-			const repo = `https://${GITHUB_TOKEN}@github.com/${(target.url as NodeURL).action}.git`
+		const dir = await token()
+			.then(githubToken => `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
+			.then(repo => clone(repo))
 
-			return clone(repo).then(dir => {
-				const readFile = promisify(readFileCallback)
-
-				return readFile(join(dir, 'action.yml'))
-					.then(text => parse(text.toString()))
-					.then(action => {
-						if (action.isNode()) {
-							return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
-								cwd: dir,
-								env: action.env(),
-							})
-						}
-
-						// Container Action
-						return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
+		return fs.promises
+			.readFile(join(dir, 'action.yml'))
+			.then(text => parse(text.toString()))
+			.then(async action => {
+				if (action.isNode()) {
+					return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
+						cwd: dir,
+						env: action.env(),
 					})
-					.finally(() => rmRF(dir))
+				}
+
+				// Container Action
+				return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
 			})
-		})
+			.finally(() => rmRF(dir))
 	})
 
 	saveState('isPost', 'true')
 }
 
-function runDocker(image: string, runs?: ContainerRuns) {
-	let args = ['run']
-	if (runs && runs.args) args.push(...runs.args)
-	if (runs && runs.entrypoint) args.push('--entrypoint', runs.entrypoint)
-	if (runs && runs.env) Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
+async function runDocker(image: string, runs?: ContainerRuns): Promise<number> {
+	const args = ['run']
+	if (runs?.args) {
+		args.push(...runs.args)
+	}
+	if (runs?.entrypoint) {
+		args.push('--entrypoint', runs.entrypoint)
+	}
+	if (runs?.env) {
+		Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
+	}
 	args.push(image)
 
-	if (/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/.exec(image) !== null) {
-		return login()
-			.then(_ => exec('docker', args))
-			.finally(logout)
+	if (!ecrDockerUrl.test(image)) {
+		return exec('docker', args)
 	}
 
-	return exec('docker', args)
+	return login()
+		.then(_ => exec('docker', args))
+		.finally(logout)
 }
 
 function hideSecret(secret: string): string {
@@ -68,7 +73,9 @@ function hideSecret(secret: string): string {
 async function token(): Promise<string> {
 	const secret = getInput('target-token', { required: true })
 
-	if (secret.startsWith('ssm://')) return getParameter(secret.substr(6)).then(hideSecret)
+	if (secret.startsWith('ssm://')) {
+		return getParameter(secret.substr(6)).then(hideSecret)
+	}
 
 	return Promise.resolve(hideSecret(secret))
 }
