@@ -1,0 +1,14 @@
+name: Private Action
+description: Runs a Private Action
+
+inputs:
+  target-token:
+    description: 'Personal Access Token with repo scope for targeted private action'
+    required: true
+  target-action:
+    description: 'Private Action {owner}/{repo}[/{path}][@{ref}]'
+    required: true
+
+runs:
+  using: 'node12'
+  main: 'dist/index.js'

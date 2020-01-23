@@ -1,0 +1,29 @@
+{
+  "name": "@edms/private-action",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@github.com/edms/private-action.git"
+  },
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "build": "ncc build src/index.ts"
+  },
+  "devDependencies": {
+    "@zeit/ncc": "^0.21.0",
+    "typescript": "^3.7.4"
+  },
+  "dependencies": {
+    "@actions/core": "^1.2.1",
+    "@actions/exec": "^1.0.3",
+    "@actions/github": "^2.0.1",
+    "@actions/io": "^1.0.2",
+    "@types/js-yaml": "^3.12.1",
+    "aws-sdk": "^2.604.0",
+    "js-yaml": "^3.13.1"
+  }
+}
