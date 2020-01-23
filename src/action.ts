@@ -369,10 +369,16 @@ export class Action implements IAction {
 
 	constructor(input: IAction) {
 		this.name = input.name
-		if (input.author && input.author.length) this.author = input.author
+		if (input.author && input.author.length) {
+			this.author = input.author
+		}
 		this.description = input.description
-		if (input.inputs && input.inputs.length) this.inputs = input.inputs
-		if (input.outputs && input.outputs.length) this.outputs = input.outputs
+		if (input.inputs && input.inputs.length) {
+			this.inputs = input.inputs
+		}
+		if (input.outputs && input.outputs.length) {
+			this.outputs = input.outputs
+		}
 
 		const using = input.runs.using
 
@@ -426,7 +432,7 @@ export class Action implements IAction {
 		return env
 	}
 
-	dockerImage = (): Promise<string> => {
+	dockerImage = async (): Promise<string> => {
 		const url = this.url as DockerURL
 		const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
 		return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
@@ -442,7 +448,7 @@ export class Target {
 		this.url = url
 	}
 
-	dockerImage = (): Promise<string> => {
+	dockerImage = async (): Promise<string> => {
 		const url = this.url as DockerURL
 		const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
 		return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
@@ -452,7 +458,9 @@ export class Target {
 export function target(): Promise<Target> {
 	const action = getInput('target-action', { required: true })
 
-	if (action.startsWith('.')) return Promise.reject(new Error('Does not support local prefixed actions'))
+	if (action.startsWith('.')) {
+		return Promise.reject(new Error('Does not support local prefixed actions'))
+	}
 
 	if (action.startsWith('docker://')) {
 		const parts = dockerURL.exec(action)!
@@ -473,8 +481,9 @@ export function target(): Promise<Target> {
 	}
 
 	const parts = actionURL.exec(action)!
-	if (parts.length !== 6)
+	if (parts.length !== 6) {
 		return Promise.reject(new Error('Action must be in the following format: {owner}/{repo}[/{path}][@{ref}]'))
+	}
 
 	return Promise.resolve(
 		new Target({

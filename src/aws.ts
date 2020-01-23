@@ -38,16 +38,18 @@ function instanceIdentity(): Promise<InstanceIdentity> {
 	return instanceIdentityPromise!
 }
 
-export function accountID(): Promise<string> {
+export async function accountID(): Promise<string> {
 	let id = getInput('aws_account_id')
 	if (id.length > 0) return Promise.resolve(id)
 
 	return instanceIdentity().then(identity => identity.accountId)
 }
 
-export function region(): Promise<string> {
+export async function region(): Promise<string> {
 	let r = getInput('aws_region')
-	if (r.length > 0) return Promise.resolve(r)
+	if (r.length > 0) {
+		return Promise.resolve(r)
+	}
 
 	return instanceIdentity().then(identity => identity.region)
 }

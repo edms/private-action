@@ -3,7 +3,7 @@ import { region } from './aws'
 
 const ssm = region().then(region => new SSM({ region }))
 
-export function getParameter(name: string): Promise<string> {
+export async function getParameter(name: string): Promise<string> {
 	return ssm
 		.then(ssm =>
 			ssm
@@ -16,7 +16,7 @@ export function getParameter(name: string): Promise<string> {
 		.then(data => data.Parameter!.Value!)
 }
 
-export function getParameters(names: Array<string>): Promise<Map<string, string>> {
+export async function getParameters(names: Array<string>): Promise<Map<string, string>> {
 	return ssm
 		.then(ssm =>
 			ssm
@@ -33,13 +33,13 @@ export function getParameters(names: Array<string>): Promise<Map<string, string>
 		})
 }
 
-export function getParametersByPath(path: string): Promise<Map<string, string>> {
+export async function getParametersByPath(path: string): Promise<Map<string, string>> {
 	return ssm.then(ssm => {
 		let params: Map<string, string> = new Map()
 
 		let get: (token?: string) => Promise<Map<string, string>>
 
-		get = token => {
+		get = async token => {
 			return ssm
 				.getParametersByPath({
 					Path: path,

@@ -13,11 +13,11 @@ import { parse } from './yaml'
 const isPost = getState('isPost') === 'true'
 
 if (!isPost) {
-	target().then(target => {
+	target().then(async target => {
 		// Run Container Directly
 		if (!target.clone) return target.dockerImage().then(runDocker)
 
-		return token().then(GITHUB_TOKEN => {
+		return token().then(async GITHUB_TOKEN => {
 			const repo = `https://${GITHUB_TOKEN}@github.com/${(target.url as NodeURL).action}.git`
 
 			return clone(repo).then(dir => {
@@ -65,7 +65,7 @@ function hideSecret(secret: string): string {
 	return secret
 }
 
-function token(): Promise<string> {
+async function token(): Promise<string> {
 	const secret = getInput('target-token', { required: true })
 
 	if (secret.startsWith('ssm://')) return getParameter(secret.substr(6)).then(hideSecret)

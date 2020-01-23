@@ -9,7 +9,7 @@ function tmpDirectory() {
 		.substring(2, 6)
 }
 
-export function clone(url: string, ref: string = 'HEAD'): Promise<string> {
+export async function clone(url: string, ref: string = 'HEAD'): Promise<string> {
 	const dir = tmpDirectory()
 
 	const opts = {
