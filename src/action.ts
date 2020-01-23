@@ -424,7 +424,7 @@ export class Action implements IAction {
   }
 
   dockerImage = (): Promise<string> => {
-    if ((this.url as NodeURL).action !== 'undefined') throw new Error('Unable to retrieve a docker image from a Node Action')
+    if (this.isNode()) throw new Error('Unable to retrieve a docker image from a Node Action')
 
     const url = this.url as DockerURL
     return registry(url).then(registry => `${registry}${url.image}${url.tag ? ':' + url.tag : ''}`)
@@ -441,7 +441,7 @@ export class Target {
   }
 
   dockerImage = (): Promise<string> => {
-    if ((this.url as NodeURL).action !== 'undefined') throw new Error('Unable to retrieve a docker image from a Node Action')
+    if (typeof (this.url as NodeURL).action !== 'undefined') throw new Error('Unable to retrieve a docker image from a Node Action')
 
     const url = this.url as DockerURL
     return registry(url).then(registry => `${registry}${url.image}${url.tag ? ':' + url.tag : ''}`)
