@@ -1,4 +1,5 @@
 import { getInput } from '@actions/core'
+import { registry } from './ecr'
 
 /*
   Formats:
@@ -422,9 +423,10 @@ export class Action implements IAction {
     return env
   }
 
-  dockerImage = () => {
+  dockerImage = (): Promise<string> => {
     const url = this.url as DockerURL
-    return `${url.registry ? url.registry + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`
+    const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
+    return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
   }
 }
 
@@ -437,9 +439,10 @@ export class Target {
     this.url = url
   }
 
-  dockerImage = () => {
+  dockerImage = (): Promise<string> => {
     const url = this.url as DockerURL
-    return `${url.registry ? url.registry + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`
+    const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
+    return r.then(r => `${r ? r + '/' : ''}${url.image}${url.tag ? ':' + url.tag : ''}`)
   }
 }
 

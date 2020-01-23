@@ -15,7 +15,7 @@ const isPost = getState('isPost') === 'true'
 if (!isPost) {
   target().then(target => {
     // Run Container Directly
-    if (!target.clone) return runDocker(target.dockerImage())
+    if (!target.clone) return target.dockerImage().then(runDocker)
 
     return token().then(GITHUB_TOKEN => {
       const repo = `https://${GITHUB_TOKEN}@github.com/${(target.url as NodeURL).action}.git`
@@ -34,7 +34,7 @@ if (!isPost) {
             }
 
             // Container Action
-            return runDocker(action.dockerImage(), action.runs as ContainerRuns)
+            return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
           })
           .finally(() => rmRF(dir))
       })
@@ -45,11 +45,11 @@ if (!isPost) {
 }
 
 function runDocker(image: string, runs?: ContainerRuns) {
-  let args = ['--rm']
+  let args = ['run']
   if (runs && runs.args) args.push(...runs.args)
   if (runs && runs.entrypoint) args.push('--entrypoint', runs.entrypoint)
   if (runs && runs.env) Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
-  args.push('run', image)
+  args.push(image)
 
   if (/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/.exec(image) !== null) {
     return login()
