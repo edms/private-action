@@ -50,8 +50,11 @@ export async function getParametersByPath(path: string): Promise<Map<string, str
 				.then(data => {
 					data.Parameters!.forEach(parameter => params.set(parameter.Name!, parameter.Value!))
 
-					if (data.NextToken && data.NextToken.length > 0) return get(data.NextToken)
-					else return params
+					if (data.NextToken && data.NextToken.length > 0) {
+						return get(data.NextToken)
+					}
+
+					return params
 				})
 		}
 

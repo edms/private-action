@@ -22,8 +22,7 @@ export async function clone(url: string, ref: string = 'HEAD'): Promise<string> 
 		.then(_ => exec('git', ['fetch', '--depth=1', 'origin', ref], opts))
 		.then(_ => exec('git', ['reset', '--hard', 'FETCH_HEAD'], opts))
 		.then(_ => opts.cwd)
-		.catch(function(e) {
-			const err = e as Error
+		.catch((err: Error) => {
 			error(err.message)
 			throw new Error(`Failed to clone ${url}}: ${err.message}`)
 		})
