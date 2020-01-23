@@ -13,62 +13,62 @@ import { parse } from './yaml'
 const isPost = getState('isPost') === 'true'
 
 if (!isPost) {
-  target().then(target => {
-    // Run Container Directly
-    if (!target.clone) return target.dockerImage().then(runDocker)
+	target().then(target => {
+		// Run Container Directly
+		if (!target.clone) return target.dockerImage().then(runDocker)
 
-    return token().then(GITHUB_TOKEN => {
-      const repo = `https://${GITHUB_TOKEN}@github.com/${(target.url as NodeURL).action}.git`
+		return token().then(GITHUB_TOKEN => {
+			const repo = `https://${GITHUB_TOKEN}@github.com/${(target.url as NodeURL).action}.git`
 
-      return clone(repo).then(dir => {
-        const readFile = promisify(readFileCallback)
+			return clone(repo).then(dir => {
+				const readFile = promisify(readFileCallback)
 
-        return readFile(join(dir, 'action.yml'))
-          .then(text => parse(text.toString()))
-          .then(action => {
-            if (action.isNode()) {
-              return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
-                cwd: dir,
-                env: action.env(),
-              })
-            }
+				return readFile(join(dir, 'action.yml'))
+					.then(text => parse(text.toString()))
+					.then(action => {
+						if (action.isNode()) {
+							return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
+								cwd: dir,
+								env: action.env(),
+							})
+						}
 
-            // Container Action
-            return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
-          })
-          .finally(() => rmRF(dir))
-      })
-    })
-  })
+						// Container Action
+						return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
+					})
+					.finally(() => rmRF(dir))
+			})
+		})
+	})
 
-  saveState('isPost', 'true')
+	saveState('isPost', 'true')
 }
 
 function runDocker(image: string, runs?: ContainerRuns) {
-  let args = ['run']
-  if (runs && runs.args) args.push(...runs.args)
-  if (runs && runs.entrypoint) args.push('--entrypoint', runs.entrypoint)
-  if (runs && runs.env) Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
-  args.push(image)
+	let args = ['run']
+	if (runs && runs.args) args.push(...runs.args)
+	if (runs && runs.entrypoint) args.push('--entrypoint', runs.entrypoint)
+	if (runs && runs.env) Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
+	args.push(image)
 
-  if (/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/.exec(image) !== null) {
-    return login()
-      .then(_ => exec('docker', args))
-      .finally(logout)
-  }
+	if (/^[^\.]+\.dkr\.ecr\.[^\.]+\.amazonaws\.com/.exec(image) !== null) {
+		return login()
+			.then(_ => exec('docker', args))
+			.finally(logout)
+	}
 
-  return exec('docker', args)
+	return exec('docker', args)
 }
 
 function hideSecret(secret: string): string {
-  setSecret(secret)
-  return secret
+	setSecret(secret)
+	return secret
 }
 
 function token(): Promise<string> {
-  const secret = getInput('target-token', { required: true })
+	const secret = getInput('target-token', { required: true })
 
-  if (secret.startsWith('ssm://')) return getParameter(secret.substr(6)).then(hideSecret)
+	if (secret.startsWith('ssm://')) return getParameter(secret.substr(6)).then(hideSecret)
 
-  return Promise.resolve(hideSecret(secret))
+	return Promise.resolve(hideSecret(secret))
 }

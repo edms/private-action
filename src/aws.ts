@@ -2,52 +2,52 @@ import { request } from 'http'
 import { getInput } from '@actions/core'
 
 interface InstanceIdentity {
-  accountId: string
-  region: string
+	accountId: string
+	region: string
 }
 
 let instanceIdentityPromise: Promise<InstanceIdentity> | null
 
 function instanceIdentity(): Promise<InstanceIdentity> {
-  if (typeof instanceIdentityPromise === 'undefined') {
-    const opts = {
-      host: '169.254.169.254',
-      path: '/latest/dynamic/instance-identity/document',
-    }
+	if (typeof instanceIdentityPromise === 'undefined') {
+		const opts = {
+			host: '169.254.169.254',
+			path: '/latest/dynamic/instance-identity/document',
+		}
 
-    instanceIdentityPromise = new Promise((resolve, reject) => {
-      return request(opts, (res) => {
-        let chunks: Array<Buffer> = []
+		instanceIdentityPromise = new Promise((resolve, reject) => {
+			return request(opts, res => {
+				let chunks: Array<Buffer> = []
 
-        res.on('data', chunk => chunks.push(chunk))
-        res.on('end', () => {
-          const response = chunks.join('')
+				res.on('data', chunk => chunks.push(chunk))
+				res.on('end', () => {
+					const response = chunks.join('')
 
-          try {
-            return resolve(JSON.parse(response))
-          } catch (err) {
-            return reject(`Response: ${response} | Error: ${err.message}`)
-          }
-        })
-      })
-        .on('error', e => reject(e))
-        .end()
-    })
-  }
+					try {
+						return resolve(JSON.parse(response))
+					} catch (err) {
+						return reject(`Response: ${response} | Error: ${err.message}`)
+					}
+				})
+			})
+				.on('error', e => reject(e))
+				.end()
+		})
+	}
 
-  return instanceIdentityPromise!
+	return instanceIdentityPromise!
 }
 
 export function accountID(): Promise<string> {
-  let id = getInput('aws_account_id')
-  if (id.length > 0) return Promise.resolve(id)
+	let id = getInput('aws_account_id')
+	if (id.length > 0) return Promise.resolve(id)
 
-  return instanceIdentity().then(identity => identity.accountId)
+	return instanceIdentity().then(identity => identity.accountId)
 }
 
 export function region(): Promise<string> {
-  let r = getInput('aws_region')
-  if (r.length > 0) return Promise.resolve(r)
+	let r = getInput('aws_region')
+	if (r.length > 0) return Promise.resolve(r)
 
-  return instanceIdentity().then(identity => identity.region)
+	return instanceIdentity().then(identity => identity.region)
 }
