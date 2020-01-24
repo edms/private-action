@@ -1,5 +1,5 @@
-import { getInput } from '@actions/core'
-import { registry } from './ecr'
+import { getInput, info } from '@actions/core'
+import { registry as ecrRegistry } from './ecr'
 
 /*
   Formats:
@@ -435,9 +435,11 @@ export class Action implements IAction {
 	}
 
 	dockerImage = async (): Promise<string> => {
+		if (this.isNode()) {
+			throw new Error('Unable to retrieve a docker image from a Node Action')
+		}
 		const url = this.url as DockerURL
-		const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
-		return r.then(r => formatDockerImagePath(r!, url))
+		return registry(url).then(r => formatDockerImagePath(r!, url))
 	}
 }
 
@@ -465,13 +467,28 @@ export class Target {
 	}
 
 	dockerImage = async (): Promise<string> => {
+		if ((this.url as NodeURL).action !== undefined) {
+			throw new Error('Unable to retrieve a docker image from a Node Action')
+		}
 		const url = this.url as DockerURL
-		const r: Promise<string | undefined> = url.registry === 'ECR' ? registry() : Promise.resolve(url.registry)
-		return r.then(r => formatDockerImagePath(r!, url))
+		return registry(url).then(r => formatDockerImagePath(r!, url))
 	}
 }
 
-export function target(): Promise<Target> {
+async function registry(url: DockerURL): Promise<string> {
+	if (url.registry === 'ECR') {
+		return ecrRegistry().then(registry => {
+			info(`ECR registry detected, replacing with: ${registry}`)
+			return registry + '/'
+		})
+	}
+
+	if (url.registry && url.registry.length) return Promise.resolve(url.registry + '/')
+
+	return ''
+}
+
+export async function target(): Promise<Target> {
 	const action = getInput('target-action', { required: true })
 
 	if (action.startsWith('.')) {

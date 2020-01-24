@@ -1,5 +1,5 @@
 import { request } from 'http'
-import { getInput } from '@actions/core'
+import { error, getInput } from '@actions/core'
 
 interface InstanceIdentity {
 	accountId: string
@@ -26,11 +26,17 @@ function instanceIdentity(): Promise<InstanceIdentity> {
 					try {
 						return resolve(JSON.parse(response))
 					} catch (err) {
-						return reject(`Response: ${response} | Error: ${err.message}`)
+						error(
+							`Failed to parse response from metadata service. Response: ${response}. Error: ${err.message}`
+						)
+						return reject(err)
 					}
 				})
 			})
-				.on('error', e => reject(e))
+				.on('error', err => {
+					error(`Failed to retrieve document from metadata service: ${err.message}`)
+					return reject(err)
+				})
 				.end()
 		})
 	}
