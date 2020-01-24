@@ -29,7 +29,7 @@ if (!isPost) {
 				.then(text => parse(text.toString()))
 				.then(async action => {
 					if (action.isNode()) {
-						group('Running Node Action', () => {
+						return group('Running Node Action', () => {
 							return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
 								cwd: dir,
 								env: action.env(),
