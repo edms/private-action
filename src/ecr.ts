@@ -74,5 +74,4 @@ export async function logout(): Promise<number> {
 			throw new Error(`Failed to login to docker: ${stderr.join('')}. ${err.message}`)
 		})
 	})
-	// return registry().then(registry => exec('docker', ['logout', registry]))
 }
