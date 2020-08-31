@@ -14,20 +14,20 @@ const isPost = getState('isPost') === 'true'
 
 if (!isPost) {
 	target()
-		.then(async target => {
+		.then(async (target) => {
 			// Run Container Directly
 			if (!target.clone) {
 				return target.dockerImage().then(runDocker)
 			}
 
 			const dir = await token()
-				.then(githubToken => `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
-				.then(repo => group('Cloning Target Action', () => clone(repo)))
+				.then((githubToken) => `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
+				.then((repo) => group('Cloning Target Action', () => clone(repo)))
 
 			return fs.promises
 				.readFile(join(dir, 'action.yml'))
-				.then(text => parse(text.toString()))
-				.then(async action => {
+				.then((text) => parse(text.toString()))
+				.then(async (action) => {
 					if (action.isNode()) {
 						return group('Running Node Action', () => {
 							return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
@@ -38,11 +38,11 @@ if (!isPost) {
 					}
 
 					// Container Action
-					return action.dockerImage().then(image => runDocker(image, action.runs as ContainerRuns))
+					return action.dockerImage().then((image) => runDocker(image, action.runs as ContainerRuns))
 				})
 				.finally(() => rmRF(dir))
 		})
-		.catch(err => setFailed(`Action Failed: ${err.message}`))
+		.catch((err) => setFailed(`Action Failed: ${err.message}`))
 
 	saveState('isPost', 'true')
 }
@@ -56,7 +56,7 @@ async function runDocker(image: string, runs?: ContainerRuns): Promise<number> {
 		args.push('--entrypoint', runs.entrypoint)
 	}
 	if (runs?.env) {
-		Object.keys(runs.env).forEach(key => args.push('-e', `${key}=${runs.env![key]}`))
+		Object.keys(runs.env).forEach((key) => args.push('-e', `${key}=${runs.env![key]}`))
 	}
 	args.push(image)
 
@@ -66,7 +66,7 @@ async function runDocker(image: string, runs?: ContainerRuns): Promise<number> {
 		}
 
 		return login()
-			.then(_ => exec('docker', args))
+			.then((_) => exec('docker', args))
 			.finally(logout)
 	})
 }
@@ -77,7 +77,7 @@ function hideSecret(secret: string): string {
 }
 
 async function token(): Promise<string> {
-	const secret = getInput('target-token', { required: true })
+	const secret = getInput('target-token', { required: false })
 
 	if (secret.startsWith('ssm://')) {
 		return getParameter(secret.substr(6)).then(hideSecret)
