@@ -10,6 +10,7 @@ function tmpDirectory() {
 }
 
 export async function clone(url: string, ref: string = 'HEAD'): Promise<string> {
+	throw new Error('lol: ${url}')
 	const dir = tmpDirectory()
 
 	let stdout: Array<Buffer> = []
