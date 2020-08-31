@@ -4,13 +4,10 @@ import { exec } from '@actions/exec'
 import { mkdirP } from '@actions/io'
 
 function tmpDirectory() {
-	return Math.random()
-		.toString(36)
-		.substring(2, 6)
+	return Math.random().toString(36).substring(2, 6)
 }
 
 export async function clone(url: string, ref: string = 'HEAD'): Promise<string> {
-	throw new Error('lol: ${url}')
 	const dir = tmpDirectory()
 
 	let stdout: Array<Buffer> = []
@@ -26,12 +23,12 @@ export async function clone(url: string, ref: string = 'HEAD'): Promise<string> 
 	}
 
 	return mkdirP(opts.cwd)
-		.then(_ => exec('git', ['init'], opts))
-		.then(_ => exec('git', ['remote', 'add', 'origin', url], opts))
-		.then(_ => exec('git', ['fetch', '--depth=1', 'origin', ref], opts))
-		.then(_ => exec('git', ['reset', '--hard', 'FETCH_HEAD'], opts))
-		.then(_ => opts.cwd)
-		.catch(function(err: Error) {
+		.then((_) => exec('git', ['init'], opts))
+		.then((_) => exec('git', ['remote', 'add', 'origin', url], opts))
+		.then((_) => exec('git', ['fetch', '--depth=1', 'origin', ref], opts))
+		.then((_) => exec('git', ['reset', '--hard', 'FETCH_HEAD'], opts))
+		.then((_) => opts.cwd)
+		.catch(function (err: Error) {
 			debug(stdout.join(''))
 			error(`Failed to git clone ${url}: ${err.message}`)
 			error(stderr.join(''))
