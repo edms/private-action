@@ -77,7 +77,7 @@ function hideSecret(secret: string): string {
 }
 
 async function token(): Promise<string> {
-	const secret = getInput('target-token', { required: false })
+	const secret = getInput('target-token', { required: true })
 
 	if (secret.startsWith('ssm://')) {
 		return getParameter(secret.substr(6)).then(hideSecret)
