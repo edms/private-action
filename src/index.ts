@@ -30,10 +30,14 @@ if (!isPost) {
 				.then(async (action) => {
 					if (action.isNode()) {
 						return group('Running Node Action', () => {
-							return exec('node', [resolve(dir, (action.runs as NodeRuns).main)], {
-								cwd: dir,
-								env: action.env(),
-							})
+							return exec(
+								'node',
+								[resolve(dir, (target.url as NodeURL).path || '', (action.runs as NodeRuns).main)],
+								{
+									cwd: dir,
+									env: action.env(),
+								}
+							)
 						})
 					}
 
