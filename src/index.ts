@@ -25,7 +25,7 @@ if (!isPost) {
 				.then((repo) => group('Cloning Target Action', () => clone(repo)))
 
 			return fs.promises
-				.readFile(join(dir, 'action.yml'))
+				.readFile(join(dir, (target.url as NodeURL).path || '', 'action.yml'))
 				.then((text) => parse(text.toString()))
 				.then(async (action) => {
 					if (action.isNode()) {
