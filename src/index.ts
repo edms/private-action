@@ -22,13 +22,13 @@ if (!isPost) {
 
 			const dir = await token()
 				.then((githubToken) => {
-          debug(`will clone: https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
+          debug(`cloning https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
           return `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`
         })
 				.then((repo) => group('Cloning Target Action', () => clone(repo)))
 
-      debug('cloned repo into ${dir}')
-      const subdir = target.url as NodeURL).path || ''
+      debug(`cloned into ${dir}`)
+      const subdir = (target.url as NodeURL).path || ''
 
 			return fs.promises
 				.readFile(join(dir, subdir, 'action.yml'))
@@ -37,7 +37,7 @@ if (!isPost) {
 					if (action.isNode()) {
 						return group('Running Node Action', () => {
 							return exec('node', [resolve(dir, subdir, (action.runs as NodeRuns).main)], {
-								cwd: dir,
+								cwd: 'target',
 								env: action.env(),
 							})
 						})
