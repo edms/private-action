@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { join, resolve } from 'path'
-import { getInput, getState, saveState, setSecret, group, setFailed } from '@actions/core'
+import { getInput, getState, saveState, setSecret, group, setFailed, debug } from '@actions/core'
 import { exec } from '@actions/exec'
 import { rmRF } from '@actions/io'
 import { target, ContainerRuns, NodeRuns, NodeURL } from './action'
@@ -21,8 +21,13 @@ if (!isPost) {
 			}
 
 			const dir = await token()
-				.then((githubToken) => `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
+				.then((githubToken) => {
+          debug(`will clone: https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
+          return `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`
+        })
 				.then((repo) => group('Cloning Target Action', () => clone(repo)))
+
+      debug('cloned repo into ${dir}')
 
 			return fs.promises
 				.readFile(join(dir, (target.url as NodeURL).path || '', 'action.yml'))
