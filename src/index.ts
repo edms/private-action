@@ -20,12 +20,9 @@ if (!isPost) {
 				return target.dockerImage().then(runDocker)
 			}
 
-			const dir = await token()
-				.then((githubToken) => {
-          debug(`cloning github.com:${(target.url as NodeURL).action}.git`)
-          return `git@github.com:${(target.url as NodeURL).action}.git`
-        })
-				.then((repo) => group('Cloning Target Action', () => clone(repo)))
+      const dir = await group('Cloning Target Action', () => {
+        return clone(`git@github.com:${(target.url as NodeURL).action}.git`)
+      })
 
       debug(`cloned into ${dir}`)
       const subdir = (target.url as NodeURL).path || ''
@@ -82,7 +79,7 @@ function hideSecret(secret: string): string {
 }
 
 async function token(): Promise<string> {
-	const secret = getInput('target-token', { required: true })
+	const secret = getInput('target-token', { required: false })
 
 	if (secret.startsWith('ssm://')) {
 		return getParameter(secret.substr(6)).then(hideSecret)
