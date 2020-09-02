@@ -37,7 +37,6 @@ if (!isPost) {
 					if (action.isNode()) {
 						return group('Running Node Action', () => {
 							return exec('node', [resolve(dir, subdir, (action.runs as NodeRuns).main)], {
-								cwd: 'target',
 								env: action.env(),
 							})
 						})
