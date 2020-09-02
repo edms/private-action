@@ -22,8 +22,8 @@ if (!isPost) {
 
 			const dir = await token()
 				.then((githubToken) => {
-          debug(`cloning https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`)
-          return `https://${githubToken}@github.com/${(target.url as NodeURL).action}.git`
+          debug(`cloning github.com:${(target.url as NodeURL).action}.git`)
+          return `${githubToken}@github.com:${(target.url as NodeURL).action}.git`
         })
 				.then((repo) => group('Cloning Target Action', () => clone(repo)))
 
