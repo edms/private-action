@@ -9,6 +9,10 @@ inputs:
     description: 'Private Action {owner}/{repo}[/{path}][@{ref}]'
     required: true
 
+  # Optional args from other actions to hide warnings
+  npm-token:
+    required: false
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
