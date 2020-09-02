@@ -479,11 +479,11 @@ async function registry(url: DockerURL): Promise<string> {
 	if (url.registry === 'ECR') {
 		return ecrRegistry().then(registry => {
 			info(`ECR registry detected, replacing with: ${registry}`)
-			return registry + '/'
+			return registry
 		})
 	}
 
-	if (url.registry && url.registry.length) return Promise.resolve(url.registry + '/')
+	if (url.registry && url.registry.length) return Promise.resolve(url.registry)
 
 	return ''
 }
