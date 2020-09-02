@@ -14,7 +14,7 @@ export async function clone(url: string, ref: string = 'HEAD'): Promise<string> 
 	let stderr: Array<Buffer> = []
 
 	const opts = {
-		cwd: 'target', // join('target', dir),
+		cwd: join('target', dir),
 		silent: true,
 		listeners: {
 			stdout: (data: Buffer) => stdout.push(data),

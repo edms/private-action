@@ -28,14 +28,15 @@ if (!isPost) {
 				.then((repo) => group('Cloning Target Action', () => clone(repo)))
 
       debug('cloned repo into ${dir}')
+      const subdir = target.url as NodeURL).path || ''
 
 			return fs.promises
-				.readFile(join(dir, (target.url as NodeURL).path || '', 'action.yml'))
+				.readFile(join(dir, subdir, 'action.yml'))
 				.then((text) => parse(text.toString()))
 				.then(async (action) => {
 					if (action.isNode()) {
 						return group('Running Node Action', () => {
-							return exec('node', [resolve(dir, (target.url as NodeURL).path || '', (action.runs as NodeRuns).main)], {
+							return exec('node', [resolve(dir, subdir, (action.runs as NodeRuns).main)], {
 								cwd: dir,
 								env: action.env(),
 							})
